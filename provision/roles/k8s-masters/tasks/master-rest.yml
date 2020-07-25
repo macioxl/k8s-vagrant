@@ -1,0 +1,13 @@
+---
+
+- name: Copy the join command to server location
+  copy: src=./tmp/join-command dest=/tmp/join-command mode=0400
+
+- name: Copy cert key to server location
+  copy: src=./tmp/cert-key  dest=/tmp/cert-key mode=0400
+
+- name: join secondary master
+  shell: $($(cat /tmp/join-command) --apiserver-advertise-address="{{ ansible_eth1.ipv4.address }}" --node-name {{ ansible_hostname }} --control-plane --certificate-key $(cat /tmp/cert-key))
+  ignore_errors: yes
+
+- include_tasks: kubeconfig.yml

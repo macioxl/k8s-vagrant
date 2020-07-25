@@ -1,0 +1,4 @@
+---
+# vars file for lb
+
+keep_pass: "{{ lookup('password', './tmp/keepalive_pass length=8') }}"

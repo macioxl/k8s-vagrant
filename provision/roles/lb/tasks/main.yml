@@ -1,0 +1,44 @@
+---
+# tasks file for lb
+
+- name: Put SELinux in permissive mode, logging actions that would be blocked.
+  selinux:
+    policy: targeted
+    state: disabled
+
+- name: haaproxy and keepalived
+  dnf:
+    name:
+    - haproxy
+    - keepalived
+    state: present
+
+- name: create apicheck script
+  template:
+    src: check_apiserverhttps.sh.j2
+    dest: /usr/libexec/keepalived/check_apiserverhttps.sh
+    mode: 555
+    owner: root
+
+- name: create keepalived.conf
+  template:
+    src: keepalived.conf.j2
+    dest: /etc/keepalived/keepalived.conf
+    mode: 0600
+    owner: root
+    force: yes
+  notify: restart keepalived
+
+- name: create haproxy.conf
+  template:
+    src: haproxy.cfg.j2
+    dest: /etc/haproxy/haproxy.cfg
+    mode: 0644
+    owner: root
+    force: yes
+  notify: restart haproxy
+
+
+#- debug: 
+#    var: ansible_eth1.ipv4.address.split(".")[-1]
+

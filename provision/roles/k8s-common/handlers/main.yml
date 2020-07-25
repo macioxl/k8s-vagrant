@@ -1,0 +1,16 @@
+---
+# handlers file for k8s-common
+
+- name: restart kubelet
+  service:
+    name: kubelet
+    daemon_reload: yes
+    state: restarted
+    enabled: yes
+
+- name: restart docker
+  service:
+    name: docker
+    daemon_reload: yes
+    state: restarted
+    enabled: yes

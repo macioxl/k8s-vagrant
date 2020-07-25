@@ -1,0 +1,14 @@
+#jinja2: trim_blocks:False
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  namespace: metallb-system
+  name: config
+data:
+  config: |
+    address-pools:
+    - name: default
+      protocol: layer2
+      addresses:
+      - {{ ip_range}}.240-{{ ip_range }}.250
+

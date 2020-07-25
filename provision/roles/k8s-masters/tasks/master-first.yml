@@ -1,0 +1,67 @@
+---
+
+- name: Initialize the Kubernetes cluster using kubeadm (single master)
+  command: kubeadm init --apiserver-advertise-address="{{ ansible_eth1.ipv4.address }}" --apiserver-cert-extra-sans="{{ ansible_eth1.ipv4.address }}"  --node-name {{ ansible_hostname }} --pod-network-cidr "{{ POD_NETWORK }}" --upload-certs 
+  when: m == "1"
+
+- name: move /etc/hosts /etc/hosts.bak
+  command: mv /etc/hosts /etc/hosts.bak
+  when: m >= "2" 
+  
+- name: Generate fake /etc/hosts file
+  template:
+    src=hosts.j2
+    dest=/etc/hosts
+  when: m >= "2"
+  
+- name: Initialize the Kubernetes cluster using kubeadm (multimaster master)
+  command: kubeadm init --control-plane-endpoint lb:6443 --apiserver-advertise-address="{{ ansible_eth1.ipv4.address }}" --apiserver-cert-extra-sans="{{ ansible_eth1.ipv4.address }}"  --node-name {{ ansible_hostname }} --pod-network-cidr "{{ POD_NETWORK }}" --upload-certs
+  when: m >= "2"
+
+- name: move /etc/hosts.bak /etc/hosts
+  command: mv -f /etc/hosts.bak /etc/hosts
+  when: m >= "2"
+
+- include_tasks: ./roles/k8s-masters/tasks/kubeconfig.yml
+
+- name: k8s apply weave
+  shell: kubectl apply -f "https://cloud.weave.works/k8s/net?k8s-version=$(kubectl version | base64 | tr -d '\n')&env.IPTABLES_BACKEN=nft"
+  become: no
+
+- name: metallb config
+  template:
+    src=metallb-cm.yaml.j2
+    dest=/tmp/metallb-cm.yaml
+  become: no
+
+- name: deploy metallb
+  shell: "{{ item }}"
+  with_items: 
+  - kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.9.3/manifests/namespace.yaml
+  - kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.9.3/manifests/metallb.yaml
+  - kubectl create secret generic -n metallb-system memberlist --from-literal=secretkey="{{ lookup('password', '/dev/null length=128')|b64encode }}"
+  - kubectl apply -f /tmp/metallb-cm.yaml
+  become: no 
+
+- name: deploy nginx-ingress
+  shell: kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v0.34.1/deploy/static/provider/cloud/deploy.yaml
+  become: no
+
+- name: Generate join command
+  command: kubeadm token create --print-join-command
+  register: join_command
+
+# - debug: var=join_command.stdout_lines
+
+- name: Copy join command to local file
+  local_action: copy content="{{ join_command.stdout_lines[0] }}" dest="./tmp/join-command"
+
+- name: Generate cert
+  command: kubeadm init phase upload-certs --upload-certs
+  register: cert_key
+  when: m >= "2"
+
+- name: Copy cert_key command to local file
+  local_action: copy content="{{ cert_key.stdout_lines[-1] }}" dest="./tmp/cert-key"
+  when: m >= "2"
+

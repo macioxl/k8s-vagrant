@@ -1,0 +1,21 @@
+---
+
+- hosts: lb
+  become: yes
+
+  roles:
+    - lb
+
+- hosts: k8s_masters
+  become: yes
+
+  roles:
+    - k8s-common
+    - k8s-masters
+
+- hosts: k8s_workers
+  become: yes
+ 
+  roles:
+    - k8s-common
+    - k8s-workers 

@@ -1,0 +1,18 @@
+---
+# tasks file for k8s-masters
+
+- name: curl
+  uri:
+    url: https://lb:6443/healthz
+    validate_certs: false
+  register: result
+  failed_when: false
+
+- debug:
+    var: result
+
+- import_tasks: ./roles/k8s-masters/tasks/master-first.yml
+  when: result.status != 200
+
+- import_tasks: ./roles/k8s-masters/tasks/master-rest.yml
+  when: result.status == 200
