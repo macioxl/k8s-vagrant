@@ -43,16 +43,20 @@
     - https://packages.cloud.google.com/yum/doc/yum-key.gpg
     - https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
 
-- name: Install containerd from RPM
-  dnf:
-    name: 'https://download.docker.com/linux/centos/7/x86_64/stable/Packages/containerd.io-1.2.13-3.2.el7.x86_64.rpm'
-    state: present
+#- name: Install containerd from RPM
+#  dnf:
+##    name: 'https://download.docker.com/linux/centos/7/x86_64/stable/Packages/containerd.io-1.2.13-3.2.el7.x86_64.rpm'
+#    name: 'https://download.docker.com/linux/centos/7/x86_64/stable/Packages/containerd.io-1.2.6-3.3.el7.x86_64.rpm'
+#    state: present
+
+- name: Install docker-ce (nobest)
+  command: dnf install docker-ce --nobest -y
 
 - name: Install docker-ce, kubeadm, kubelet
   dnf:
     name:
-    - docker-ce
-    - docker-ce-cli
+#    - docker-ce
+#    - docker-ce-cli
     - kubeadm
     - kubelet
     - kubectl
